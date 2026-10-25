@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>TapNova Menu · Admin</title>
+<style>
+:root{--ink:#101524;--ac:#2F4BFF;--bg:#F3F4F8;--ln:#DDE0EA;--mu:#5F667A}
+*{box-sizing:border-box}body{margin:0;font:16px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--ink);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+header b{font-size:18px}main{max-width:640px;margin:0 auto;padding:14px 14px 90px}
+.card{background:#fff;border:1px solid var(--ln);border-radius:12px;padding:14px;margin-bottom:12px}
+.card .card{background:#FAFBFE;margin:12px 0 0}
+h2{font-size:17px;margin:4px 0 6px}label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+label.ck{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:15px}
+input,textarea,select{width:100%;padding:11px;border:1px solid var(--ln);border-radius:9px;font:inherit;background:#fff;color:var(--ink)}
+input[type=checkbox]{width:auto}textarea{min-height:70px}
+button{font:inherit;border:0;border-radius:9px;padding:10px 14px;background:var(--ac);color:#fff;cursor:pointer}
+button.g{background:#E8EAF3;color:var(--ink)}button.r{background:#FDE8E8;color:#B42318}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row>button{flex:0 0 auto}.sp{justify-content:space-between}
+.img{width:72px;height:72px;border-radius:10px;object-fit:cover;background:var(--ln);flex:0 0 72px}
+.tag{font-size:12px;padding:3px 8px;border-radius:99px;background:#E4F6EA;color:#146C2E;flex:0 0 auto}.tag.off{background:#EEE;color:#666}
+.bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--ln);padding:10px 14px;display:flex;gap:8px;justify-content:center}.bar button{flex:1;max-width:300px}
+#t{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:9px;z-index:9;display:none;max-width:90%}
+.lk{word-break:break-all;background:var(--bg);padding:10px;border-radius:9px}.qr{width:200px;margin:12px auto}.qr svg{width:100%;height:auto;display:block}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+</style></head><body>
+<header><b>TapNova Menu</b><button class="g" id="lo" data-a="logout" hidden>Déconnexion</button></header>
+<div id="t" role="status"></div><main id="app"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+let S={view:'boot',list:[],q:'',cur:null,done:false};
+const blank=()=>({name:'',description:'',address:'',maps:'',phone:'',whatsapp:'',instagram:'',facebook:'',logo:'',cover:'',langs:['fr'],cats:[{id:uid(),n:'',n2:''}],prods:[]});
+const get=p=>{const v=p.split('.').reduce((o,k)=>o==null?o:o[k],S.cur.data);return v==null?'':v};
+const set=(p,v)=>{const a=p.split('.'),l=a.pop();a.reduce((o,k)=>o[k],S.cur.data)[l]=v};
+function toast(m){const t=$('#t');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3000)}
+async function api(p,o={}){
+  const r=await fetch('/api'+p,{method:o.m||'GET',headers:{'Content-Type':'application/json'},body:o.b?JSON.stringify(o.b):undefined,credentials:'same-origin'});
+  let j={};try{j=await r.json()}catch(e){}
+  if(r.status===401&&p!=='/login'){S.view='login';render();throw new Error('Session expirée, reconnectez-vous')}
+  if(!r.ok)throw new Error(j.error||'Erreur '+r.status);return j}
+async function home(){S.list=(await api('/clients')).items;S.view='list';render()}
+
+const items=()=>{const q=S.q.toLowerCase(),L=S.list.filter(c=>(c.name||'').toLowerCase().includes(q));
+  return L.map(c=>`<div class="card"><div class="row sp"><b>${esc(c.name||'Sans nom')}</b><span class="tag ${c.active?'':'off'}">${c.active?'Actif':'Désactivé'}</span></div>
+  <div class="row" style="margin-top:10px"><button class="g" data-a="edit" data-id="${c.id}">Modifier</button><button class="g" data-a="toggle" data-id="${c.id}">${c.active?'Désactiver':'Activer'}</button><button class="r" data-a="del" data-id="${c.id}">Supprimer</button></div></div>`).join('')||'<p>Aucun client trouvé. Créez votre premier menu.</p>'};
+const fld=(l,p,t)=>`<label>${l}</label><input type="${t||'text'}" data-p="${p}" value="${esc(get(p))}">`;
+const area=(l,p,rtl)=>`<label>${l}</label><textarea ${rtl?'dir="rtl"':''} data-p="${p}">${esc(get(p))}</textarea>`;
+const pimg=(p,u)=>`<div class="row"><img class="img" alt="" ${u?`src="${esc(u)}"`:''}><div><input type="file" accept="image/*" data-up="${p}">${u?`<button class="g" data-a="rmimg" data-p="${p}" style="margin-top:6px">Retirer la photo</button>`:''}</div></div>`;
+function vProd(p,pi,ar){
+  return `<div class="card">${pimg('prods.'+pi+'.img',p.img)}
+  ${fld('Nom du produit','prods.'+pi+'.n')}${ar?`<label>الاسم بالعربية</label><input dir="rtl" data-p="prods.${pi}.n2" value="${esc(p.n2)}">`:''}
+  ${area('Description','prods.'+pi+'.d')}${ar?area('الوصف بالعربية','prods.'+pi+'.d2',1):''}
+  ${p.vars.length?'':fld('Prix (DH)','prods.'+pi+'.price','number')}
+  ${p.vars.map((v,vi)=>`<div class="row" style="margin-top:8px"><input placeholder="Taille (ex : M)" data-p="prods.${pi}.vars.${vi}.l" value="${esc(v.l)}"><input type="number" placeholder="Prix DH" data-p="prods.${pi}.vars.${vi}.p" value="${esc(v.p)}"><button class="r" data-a="delvar" data-i="${pi}" data-j="${vi}">✕</button></div>`).join('')}
+  <div style="margin-top:8px"><button class="g" data-a="addvar" data-i="${pi}">+ Taille / variante</button></div>
+  <label class="ck"><input type="checkbox" data-p="prods.${pi}.hidden" ${p.hidden?'checked':''}> Masquer (produit indisponible)</label>
+  <div class="row" style="margin-top:8px"><button class="g" data-a="upprod" data-i="${pi}">↑</button><button class="g" data-a="dnprod" data-i="${pi}">↓</button><button class="g" data-a="dupprod" data-i="${pi}">Dupliquer</button><button class="r" data-a="delprod" data-i="${pi}">Supprimer</button></div></div>`}
+function qm(u){const q=qrcode(0,'M');q.addData(u);q.make();return q}
+function qsvg(u){const q=qm(u),n=q.getModuleCount(),m=4;let p='';for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))p+=`M${c+m} ${r+m}h1v1h-1z`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n+2*m} ${n+2*m}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${p}"/></svg>`}
+function qpng(u){const q=qm(u),n=q.getModuleCount(),m=4,k=Math.max(8,Math.floor(1600/(n+2*m))),s=k*(n+2*m),cv=document.createElement('canvas');cv.width=cv.height=s;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,s,s);x.fillStyle='#000';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))x.fillRect((c+m)*k,(r+m)*k,k,k);return new Promise(ok=>cv.toBlob(ok,'image/png'))}
+function dl(b,name){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove()}
+const link=()=>location.origin+'/menu/'+S.cur.slug;
+function vEdit(){
+  const d=S.cur.data,ar=d.langs.includes('ar');let h='';
+  if(S.done){let q='';try{q=qsvg(link())}catch(e){q='<p>QR indisponible (connexion requise)</p>'}
+    h+=`<div class="card"><h2>Menu enregistré</h2><div class="lk">${esc(link())}</div><div class="qr">${q}</div>
+    <div class="row"><button data-a="copy">Copier le lien</button><button data-a="view">Voir le menu</button><button data-a="share">Partager</button></div>
+    <div class="row" style="margin-top:8px"><button class="g" data-a="qrpng">Télécharger le QR Code (PNG)</button><button class="g" data-a="qrsvg">Télécharger le QR Code (SVG)</button></div></div>`}
+  h+=`<div class="card"><h2>${S.cur.id?'Modifier le menu':'Nouveau menu'}</h2>
+  <label class="ck"><input type="checkbox" data-act ${S.cur.active?'checked':''}> Menu actif (visible par le public)</label>
+  ${fld('Nom du café / snack / restaurant','name')}${area('Description','description')}
+  <label>Logo</label>${pimg('logo',d.logo)}<label>Photo de couverture</label>${pimg('cover',d.cover)}
+  ${fld('Adresse','address')}${fld('Lien Google Maps (optionnel)','maps','url')}${fld('Téléphone','phone','tel')}${fld('WhatsApp','whatsapp','tel')}${fld('Instagram (lien ou @nom)','instagram')}${fld('Facebook (lien)','facebook')}
+  <label>Langue du menu</label><label class="ck"><input type="checkbox" data-lang="fr" ${d.langs.includes('fr')?'checked':''}> Français</label><label class="ck"><input type="checkbox" data-lang="ar" ${ar?'checked':''}> العربية (RTL)</label></div>`;
+  h+=d.cats.map((c,ci)=>`<div class="card"><h2>Catégorie</h2><div class="row"><input placeholder="Nom (Cafés, Pizzas…)" data-p="cats.${ci}.n" value="${esc(c.n)}">${ar?`<input dir="rtl" placeholder="الاسم بالعربية" data-p="cats.${ci}.n2" value="${esc(c.n2)}">`:''}</div>
+  <div class="row" style="margin-top:8px"><button class="g" data-a="upcat" data-i="${ci}">↑</button><button class="g" data-a="dncat" data-i="${ci}">↓</button><button class="r" data-a="delcat" data-i="${ci}">Supprimer la catégorie</button></div>
+  ${d.prods.map((p,pi)=>p.cat===c.id?vProd(p,pi,ar):'').join('')}<div style="margin-top:12px"><button data-a="addprod" data-i="${ci}">+ Ajouter un produit</button></div></div>`).join('');
+  h+=`<div style="margin-bottom:12px"><button class="g" data-a="addcat">+ Ajouter une catégorie</button></div>
+  <div class="bar"><button class="g" data-a="back">← Retour</button><button data-a="save">Enregistrer</button></div>`;return h}
+function render(){
+  const y=scrollY;$('#lo').hidden=S.view==='login'||S.view==='boot';
+  if(S.view==='login')app.innerHTML=`<div class="card"><h2>Connexion</h2><label>Code administrateur</label><input id="k" type="password" autocomplete="current-password"><div style="margin-top:12px"><button data-a="login">Se connecter</button></div></div>`;
+  else if(S.view==='list')app.innerHTML=`<div class="row"><input id="q" placeholder="Rechercher un client" value="${esc(S.q)}"><button data-a="new">Créer un nouveau menu</button></div><div style="height:12px"></div><div id="ls">${items()}</div>`;
+  else if(S.view==='edit')app.innerHTML=vEdit();
+  scrollTo(0,y)}
+function upload(file){return new Promise((ok,ko)=>{const im=new Image(),u=URL.createObjectURL(file);im.onerror=()=>ko(new Error('Image illisible'));
+  im.onload=async()=>{try{const k=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok((await api('/upload',{m:'POST',b:{image:c.toDataURL('image/jpeg',.82)}})).url)}catch(e){ko(e)}};im.src=u})}
+const move=(arr,i,dir,same)=>{const ids=arr.map((x,k)=>k).filter(k=>same(arr[k],arr[i])),pos=ids.indexOf(i),t=ids[pos+dir];if(t!=null)[arr[i],arr[t]]=[arr[t],arr[i]]};
+
+app.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='q'){S.q=t.value;$('#ls').innerHTML=items();return}
+  if(t.dataset.p&&t.type!=='checkbox')set(t.dataset.p,t.type==='number'&&t.value!==''?+t.value:t.value)});
+app.addEventListener('change',async e=>{const t=e.target;
+  if(t.hasAttribute('data-act')){S.cur.active=t.checked;return}
+  if(t.type==='checkbox'&&t.dataset.p){set(t.dataset.p,t.checked);return}
+  if(t.dataset.lang){const s=new Set(S.cur.data.langs);t.checked?s.add(t.dataset.lang):s.delete(t.dataset.lang);if(!s.size)s.add('fr');S.cur.data.langs=['fr','ar'].filter(x=>s.has(x));render();return}
+  if(t.dataset.up&&t.files[0]){try{toast('Envoi de la photo…');set(t.dataset.up,await upload(t.files[0]));render();toast('Photo ajoutée')}catch(err){toast(err.message)}}});
+app.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,i=+b.dataset.i,j=+b.dataset.j,d=S.cur&&S.cur.data;
+  try{
+    if(a==='login'){await api('/login',{m:'POST',b:{key:$('#k').value}});await home()}
+    else if(a==='new'){S.cur={id:null,active:true,data:blank()};S.done=false;S.view='edit';render();scrollTo(0,0)}
+    else if(a==='edit'){const r=await api('/clients/'+b.dataset.id);r.data={...blank(),...r.data};S.cur=r;S.done=false;S.view='edit';render();scrollTo(0,0)}
+    else if(a==='toggle'){const c=S.list.find(x=>x.id===b.dataset.id);await api('/clients/'+c.id,{m:'PUT',b:{active:!c.active}});await home()}
+    else if(a==='del'){if(confirm('Supprimer définitivement ce client et son menu ?')){await api('/clients/'+b.dataset.id,{m:'DELETE'});await home()}}
+    else if(a==='back'){await home()}
+    else if(a==='save'){
+      if(!d.name.trim())return toast("Indiquez le nom de l'établissement");
+      const r=S.cur.id?await api('/clients/'+S.cur.id,{m:'PUT',b:{data:d,active:S.cur.active}}):await api('/clients',{m:'POST',b:{data:d,active:S.cur.active}});
+      S.cur={id:r.id,slug:r.slug,active:r.active,data:{...blank(),...r.data}};S.done=true;render();scrollTo(0,0);toast('Enregistré')}
+    else if(a==='addcat'){d.cats.push({id:uid(),n:'',n2:''});render()}
+    else if(a==='delcat'){if(confirm('Supprimer cette catégorie et tous ses produits ?')){const id=d.cats[i].id;d.prods=d.prods.filter(p=>p.cat!==id);d.cats.splice(i,1);render()}}
+    else if(a==='upcat'||a==='dncat'){const k=a==='upcat'?i-1:i+1;if(d.cats[k]){[d.cats[i],d.cats[k]]=[d.cats[k],d.cats[i]];render()}}
+    else if(a==='addprod'){d.prods.push({id:uid(),cat:d.cats[i].id,n:'',n2:'',d:'',d2:'',price:'',img:'',hidden:false,vars:[]});render()}
+    else if(a==='delprod'){if(confirm('Supprimer ce produit ?')){d.prods.splice(i,1);render()}}
+    else if(a==='dupprod'){const c=JSON.parse(JSON.stringify(d.prods[i]));c.id=uid();c.n=(c.n||'')+' (copie)';d.prods.splice(i+1,0,c);render()}
+    else if(a==='upprod'||a==='dnprod'){move(d.prods,i,a==='upprod'?-1:1,(x,y)=>x.cat===y.cat);render()}
+    else if(a==='addvar'){d.prods[i].vars.push({l:'',p:''});render()}
+    else if(a==='delvar'){d.prods[i].vars.splice(j,1);render()}
+    else if(a==='rmimg'){set(b.dataset.p,'');render()}
+    else if(a==='copy'){await navigator.clipboard.writeText(link());toast('Lien copié')}
+    else if(a==='view'){window.open(link(),'_blank')}
+    else if(a==='share'){if(navigator.share)await navigator.share({title:d.name,url:link()});else{await navigator.clipboard.writeText(link());toast('Lien copié')}}
+    else if(a==='qrpng'){dl(await qpng(link()),'qr-'+S.cur.slug+'.png')}
+    else if(a==='qrsvg'){dl(new Blob([qsvg(link())],{type:'image/svg+xml'}),'qr-'+S.cur.slug+'.svg')}
+  }catch(err){if(err&&err.name!=='AbortError')toast(err.message)}});
+$('#lo').addEventListener('click',async()=>{try{await api('/logout',{m:'POST'})}catch(e){}S.view='login';render()});
+app.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='k')app.querySelector('[data-a=login]').click()});
+(async()=>{try{const r=await api('/me');if(r.ok)await home();else{S.view='login';render()}}catch(e){S.view='login';render();toast(e.message)}})();
+</script></body></html>
