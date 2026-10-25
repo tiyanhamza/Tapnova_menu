@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TapNova Menu</title>
+<style>
+:root{--ink:#101524;--ac:#2F4BFF;--bg:#F6F7FB;--ln:#E1E4EE;--mu:#5F667A}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font:16px/1.45 system-ui,"Segoe UI",Roboto,"Noto Sans Arabic",sans-serif;background:var(--bg);color:var(--ink)}
+.w{max-width:620px;margin:0 auto;background:#fff;min-height:100vh}
+.cv{height:170px;background:var(--ink);overflow:hidden}.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.hd{padding:0 18px 14px}.lg{width:80px;height:80px;border-radius:50%;border:4px solid #fff;background:var(--ln);object-fit:cover;margin-top:-40px;display:block}
+h1{margin:10px 0 4px;font-size:26px;line-height:1.15}.ds{color:var(--mu);margin:0 0 12px}
+.bt{display:flex;gap:8px;flex-wrap:wrap}.bt a{padding:8px 14px;border-radius:99px;background:var(--ink);color:#fff;text-decoration:none;font-size:14px}.bt a.o{background:#fff;color:var(--ink);border:1px solid var(--ln)}
+.tl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 18px 0}.tl button{border:1px solid var(--ln);background:#fff;border-radius:99px;padding:6px 14px;font:inherit;cursor:pointer}
+.sr{flex:1}.sr input{width:100%;padding:10px 14px;border:1px solid var(--ln);border-radius:99px;font:inherit;background:var(--bg)}
+#ch{position:sticky;top:0;background:#fff;z-index:4;display:flex;gap:8px;overflow-x:auto;padding:12px 18px;border-bottom:1px solid var(--ln);scrollbar-width:none}
+#ch a{flex:0 0 auto;padding:7px 14px;border-radius:99px;border:1px solid var(--ln);color:var(--ink);text-decoration:none;font-size:15px}
+section{padding:6px 18px 4px;scroll-margin-top:60px}h2{font-size:20px;margin:18px 0 6px}
+.it{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--ln)}.it img{width:84px;height:84px;border-radius:12px;object-fit:cover;flex:0 0 84px;background:var(--bg)}
+.it>div{flex:1;min-width:0}.nm{font-weight:650}.pd{color:var(--mu);font-size:14px;margin-top:2px}
+.pr{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-variant-numeric:tabular-nums}.pr b{color:var(--ac)}
+.em{padding:40px 18px;text-align:center;color:var(--mu)}footer{text-align:center;color:var(--mu);font-size:12px;padding:24px}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+</style></head><body><div class="w" id="r"><p class="em">…</p></div>
+<script>
+const T={fr:{s:'Rechercher un produit…',w:'WhatsApp',c:'Appeler',m:'Itinéraire',n:'Aucun produit trouvé',o:"Ce menu n'est pas disponible.",d:'DH',l:'العربية'},
+ ar:{s:'ابحث عن منتج…',w:'واتساب',c:'اتصال',m:'الموقع',n:'لا توجد نتائج',o:'هذا المنيو غير متوفر.',d:'درهم',l:'Français'}};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dg=s=>String(s||'').replace(/[^\d+]/g,'');
+const su=(v,h)=>/^https?:\/\//i.test(v)?v:h+String(v).replace(/^@/,'');
+const slug=decodeURIComponent(location.pathname.split('/').filter(Boolean)[1]||'');
+let M={d:null,lang:'fr',q:''};
+const R=document.getElementById('r');
+const nm=(x,ar)=>(ar&&x.n2)||x.n,ds=(x,ar)=>(ar&&x.d2)||x.d;
+const fmt=(v,t)=>v===''||v==null?'':(isNaN(+v)?esc(v):(+v).toLocaleString('fr-FR',{maximumFractionDigits:2}))+' '+t.d;
+function list(){
+  const d=M.d,ar=M.lang==='ar',t=T[M.lang],q=M.q.trim().toLowerCase();
+  const cats=d.cats.map(c=>({c,p:d.prods.filter(p=>p.cat===c.id&&!p.hidden&&(!q||(nm(p,ar)+' '+(ds(p,ar)||'')).toLowerCase().includes(q)))})).filter(x=>x.p.length);
+  document.getElementById('ch').innerHTML=cats.map(x=>`<a href="#c-${esc(x.c.id)}">${esc(nm(x.c,ar))}</a>`).join('');
+  document.getElementById('ls').innerHTML=cats.map(x=>`<section id="c-${esc(x.c.id)}"><h2>${esc(nm(x.c,ar))}</h2>`+x.p.map(p=>{
+    const v=(p.vars||[]).filter(k=>k.l||k.p!=='');
+    return `<div class="it">${p.img?`<img loading="lazy" alt="" src="${esc(p.img)}">`:''}<div><div class="nm">${esc(nm(p,ar))}</div>${ds(p,ar)?`<div class="pd">${esc(ds(p,ar))}</div>`:''}`+
+    (v.length?v.map(k=>`<div class="pr"><span>${esc(k.l)}</span><b>${fmt(k.p,t)}</b></div>`).join(''):(p.price===''?'':`<div class="pr"><span></span><b>${fmt(p.price,t)}</b></div>`))+`</div></div>`}).join('')+`</section>`).join('')||`<p class="em">${t.n}</p>`}
+function paint(){
+  const d=M.d,ar=M.lang==='ar',t=T[M.lang];
+  document.documentElement.lang=M.lang;document.documentElement.dir=ar?'rtl':'ltr';document.title=d.name+' · TapNova Menu';
+  const wa=dg(d.whatsapp).replace(/^\+/,'').replace(/^00/,'').replace(/^0/,'212');
+  const maps=/^https?:\/\//i.test(d.maps||'')?d.maps:(d.address?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(d.address):'');
+  const b=[wa&&`<a href="https://wa.me/${wa}" target="_blank" rel="noopener">${t.w}</a>`,dg(d.phone)&&`<a class="o" href="tel:${dg(d.phone)}">${t.c}</a>`,maps&&`<a class="o" href="${esc(maps)}" target="_blank" rel="noopener">${t.m}</a>`,
+   d.instagram&&`<a class="o" href="${esc(su(d.instagram,'https://instagram.com/'))}" target="_blank" rel="noopener">Instagram</a>`,d.facebook&&`<a class="o" href="${esc(su(d.facebook,'https://facebook.com/'))}" target="_blank" rel="noopener">Facebook</a>`].filter(Boolean).join('');
+  R.innerHTML=`<div class="cv">${d.cover?`<img alt="" src="${esc(d.cover)}">`:''}</div><div class="hd">${d.logo?`<img class="lg" alt="" src="${esc(d.logo)}">`:'<div class="lg"></div>'}<h1>${esc(d.name)}</h1>${d.description?`<p class="ds">${esc(d.description)}</p>`:''}<div class="bt">${b}</div></div>
+  <div class="tl"><div class="sr"><input id="q" type="search" placeholder="${t.s}" value="${esc(M.q)}"></div>${(d.langs||[]).length>1?`<button id="lg">${t.l}</button>`:''}</div><nav id="ch"></nav><div id="ls"></div><footer>TapNova Menu</footer>`;
+  list();
+  document.getElementById('q').oninput=e=>{M.q=e.target.value;list()};
+  const lg=document.getElementById('lg');if(lg)lg.onclick=()=>{M.lang=ar?'fr':'ar';paint()}}
+(async()=>{try{
+  const r=await fetch('/api/menu/'+encodeURIComponent(slug));if(!r.ok)throw 0;
+  const j=await r.json();M.d={cats:[],prods:[],langs:['fr'],...j.data};M.lang=M.d.langs[0]||'fr';paint()
+}catch(e){R.innerHTML=`<p class="em">${T.fr.o}<br>${T.ar.o}</p>`}})();
+</script></body></html>
