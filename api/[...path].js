@@ -102,8 +102,14 @@ module.exports = async (req, res) => {
       return res.end(out.body);
     }
 
-    const pathname = new URL(req.url, 'http://localhost').pathname;
-    const path = pathname.replace(/^\/api(?=\/|$)/, '') || '/';
+    const requestUrl = req.url || req.originalUrl || req.path || '/';
+let pathname = new URL(requestUrl, 'http://localhost').pathname;
+pathname = pathname.replace(/\/+$/, '') || '/';
+let path = (pathname.replace(/^\/api(?=\/|$)/, '') || '/').replace(/\/+$/, '') || '/';
+if (path === '/' && req.query && req.query.path) {
+  const parts = Array.isArray(req.query.path) ? req.query.path : [req.query.path];
+  path = '/' + parts.join('/');
+}
     const m = req.method;
 
     let body = req.body || {};
