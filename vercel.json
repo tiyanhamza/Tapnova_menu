@@ -1,0 +1,19 @@
+
+{
+  "version": 2,
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/menu/:slug",
+      "destination": "/menu/index.html"
+    }
+  ]
+}
